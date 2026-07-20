@@ -1,0 +1,103 @@
+<script type="module">
+
+import { initializeApp } 
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+import { 
+getFirestore,
+doc,
+setDoc,
+getDoc
+}
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+
+const firebaseConfig = {
+
+apiKey: "SUA_API_KEY",
+authDomain: "SEU_PROJETO.firebaseapp.com",
+projectId: "SEU_PROJECT_ID"
+
+};
+
+
+const app = initializeApp(firebaseConfig);
+
+const db = getFirestore(app);
+
+
+
+function gerarCodigo(){
+
+let chars="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+let codigo="";
+
+for(let i=0;i<8;i++){
+codigo += chars[Math.floor(Math.random()*chars.length)];
+}
+
+return codigo;
+
+}
+
+
+
+window.criar = async function(){
+
+let link=document.getElementById("link").value;
+
+
+let codigo=gerarCodigo();
+
+
+await setDoc(
+doc(db,"links",codigo),
+{
+url:link
+}
+);
+
+
+let resultado=
+location.origin+
+location.pathname+
+"?c="+codigo;
+
+
+document.getElementById("resultado").innerHTML=
+resultado;
+
+}
+
+
+
+let params=new URLSearchParams(location.search);
+
+let codigo=params.get("c");
+
+
+if(codigo){
+
+let dados=await getDoc(
+doc(db,"links",codigo)
+);
+
+
+if(dados.exists()){
+
+location.href=dados.data().url;
+
+}
+
+else{
+
+document.body.innerHTML=
+"<h1>Código inválido</h1>";
+
+}
+
+}
+
+
+</script>
