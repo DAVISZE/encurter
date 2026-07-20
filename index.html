@@ -1,20 +1,87 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
-<title>Teste Firebase</title>
+<meta charset="UTF-8">
+<title>Encurtador Firebase</title>
+
+<style>
+
+body{
+    background:#111;
+    color:white;
+    font-family:Arial;
+    text-align:center;
+    padding:50px;
+}
+
+input{
+    width:350px;
+    padding:15px;
+    border-radius:10px;
+    border:0;
+    font-size:16px;
+}
+
+button{
+    margin-top:15px;
+    padding:15px 30px;
+    border:0;
+    border-radius:10px;
+    background:#00ff88;
+    font-size:16px;
+    cursor:pointer;
+}
+
+#resultado{
+    margin-top:30px;
+    font-size:18px;
+    word-break:break-all;
+}
+
+a{
+    color:#00ff88;
+}
+
+</style>
+
 </head>
 
 <body>
 
-<h1>Firebase Teste 🔥</h1>
 
-<p id="status">Carregando...</p>
+<h1>🔗 Encurtador de Links</h1>
+
+<p>Coloque um link e crie um código aleatório</p>
+
+
+<input id="link" placeholder="https://exemplo.com">
+
+<br>
+
+<button onclick="criarLink()">
+Criar código
+</button>
+
+
+<div id="resultado"></div>
+
 
 
 <script type="module">
 
+
 import { initializeApp } 
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+
+import {
+getFirestore,
+doc,
+setDoc,
+getDoc
+}
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
 
 
 const firebaseConfig = {
@@ -28,11 +95,133 @@ const firebaseConfig = {
 };
 
 
+
 const app = initializeApp(firebaseConfig);
 
+const db = getFirestore(app);
 
-document.getElementById("status").innerHTML =
-"✅ Firebase conectado!";
+
+
+
+function gerarCodigo(){
+
+let chars =
+"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+let codigo="";
+
+
+for(let i=0;i<8;i++){
+
+codigo += chars[
+Math.floor(Math.random()*chars.length)
+];
+
+}
+
+
+return codigo;
+
+}
+
+
+
+
+window.criarLink = async function(){
+
+
+let url =
+document.getElementById("link").value;
+
+
+if(!url){
+
+alert("Digite um link!");
+
+return;
+
+}
+
+
+
+let codigo = gerarCodigo();
+
+
+
+await setDoc(
+doc(db,"links",codigo),
+{
+url:url
+}
+);
+
+
+
+let linkFinal =
+location.origin +
+location.pathname +
+"?c=" +
+codigo;
+
+
+
+document.getElementById("resultado").innerHTML =
+
+`
+✅ Criado!<br><br>
+
+<a href="${linkFinal}" target="_blank">
+${linkFinal}
+</a>
+`;
+
+}
+
+
+
+
+// Verifica se é um link com código
+
+
+let params =
+new URLSearchParams(location.search);
+
+
+let codigo =
+params.get("c");
+
+
+
+if(codigo){
+
+
+let dados =
+await getDoc(
+doc(db,"links",codigo)
+);
+
+
+
+if(dados.exists()){
+
+
+location.href =
+dados.data().url;
+
+
+}
+
+else{
+
+
+document.body.innerHTML =
+"<h1>❌ Código não existe</h1>";
+
+}
+
+
+}
+
 
 
 </script>
