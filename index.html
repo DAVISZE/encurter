@@ -2,6 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Encurtador Firebase</title>
 
 <style>
@@ -9,13 +10,14 @@
 body{
     background:#111;
     color:white;
-    font-family:Arial;
+    font-family:Arial, sans-serif;
     text-align:center;
     padding:50px;
 }
 
 input{
     width:350px;
+    max-width: 80%;
     padding:15px;
     border-radius:10px;
     border:0;
@@ -30,6 +32,7 @@ button{
     background:#00ff88;
     font-size:16px;
     cursor:pointer;
+    font-weight: bold;
 }
 
 #resultado{
@@ -48,13 +51,11 @@ a{
 
 <body>
 
-
 <h1>🔗 Encurtador de Links</h1>
 
 <p>Coloque um link e crie um código aleatório</p>
 
-
-<input id="link" placeholder="https://exemplo.com">
+<input id="link" placeholder="exemplo.com ou https://exemplo.com">
 
 <br>
 
@@ -62,17 +63,12 @@ a{
 Criar código
 </button>
 
-
 <div id="resultado"></div>
-
-
 
 <script type="module">
 
-
 import { initializeApp } 
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-
 
 import {
 getFirestore,
@@ -81,8 +77,6 @@ setDoc,
 getDoc
 }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-
 
 const firebaseConfig = {
   apiKey: "AIzaSyDWJ61F_1xKnLu8mFRAWQ9GqxtIIw8O5y8",
@@ -94,138 +88,74 @@ const firebaseConfig = {
   measurementId: "G-Q0RRSXXCQL"
 };
 
-
-
 const app = initializeApp(firebaseConfig);
-
 const db = getFirestore(app);
 
-
-
-
 function gerarCodigo(){
-
-let chars =
-"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-
-let codigo="";
-
-
-for(let i=0;i<8;i++){
-
-codigo += chars[
-Math.floor(Math.random()*chars.length)
-];
-
+    let chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let codigo = "";
+    for(let i = 0; i < 8; i++){
+        codigo += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return codigo;
 }
-
-
-return codigo;
-
-}
-
-
-
 
 window.criarLink = async function(){
+    let url = document.getElementById("link").value.trim();
 
+    if(!url){
+        alert("Digite um link!");
+        return;
+    }
 
-let url =
-document.getElementById("link").value;
+    // Garante que o link comece com http:// ou https://
+    if(!/^https?:\/\//i.test(url)){
+        url = "https://" + url;
+    }
 
+    let codigo = gerarCodigo();
 
-if(!url){
+    await setDoc(
+        doc(db, "links", codigo),
+        { url: url }
+    );
 
-alert("Digite um link!");
+    let linkFinal = location.origin + location.pathname + "?c=" + codigo;
 
-return;
-
+    document.getElementById("resultado").innerHTML = `
+        ✅ Criado!<br><br>
+        <a href="${linkFinal}" target="_blank">
+        ${linkFinal}
+        </a>
+    `;
 }
 
-
-
-let codigo = gerarCodigo();
-
-
-
-await setDoc(
-doc(db,"links",codigo),
-{
-url:url
-}
-);
-
-
-
-let linkFinal =
-location.origin +
-location.pathname +
-"?c=" +
-codigo;
-
-
-
-document.getElementById("resultado").innerHTML =
-
-`
-✅ Criado!<br><br>
-
-<a href="${linkFinal}" target="_blank">
-${linkFinal}
-</a>
-`;
-
-}
-
-
-
-
-// Verifica se é um link com código
-
-
-let params =
-new URLSearchParams(location.search);
-
-
-let codigo =
-params.get("c");
-
-
+// Verifica se é um acesso por link encurtado
+let params = new URLSearchParams(location.search);
+let codigo = params.get("c");
 
 if(codigo){
+    document.body.innerHTML = "<h1>🔄 Redirecionando...</h1>";
+    
+    let dados = await getDoc(
+        doc(db, "links", codigo)
+    );
 
+    if(dados.exists()){
+        let urlDestino = dados.data().url;
+        
+        // Validação extra caso algum link antigo tenha sido salvo sem o protocolo
+        if(!/^https?:\/\//i.test(urlDestino)){
+            urlDestino = "https://" + urlDestino;
+        }
 
-let dados =
-await getDoc(
-doc(db,"links",codigo)
-);
-
-
-
-if(dados.exists()){
-
-
-location.href =
-dados.data().url;
-
-
+        location.href = urlDestino;
+    } else {
+        document.body.innerHTML = "<h1>❌ Código não existe</h1>";
+    }
 }
-
-else{
-
-
-document.body.innerHTML =
-"<h1>❌ Código não existe</h1>";
-
-}
-
-
-}
-
-
 
 </script>
-
 
 </body>
 </html>
